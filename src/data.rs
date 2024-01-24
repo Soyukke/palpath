@@ -1,8 +1,7 @@
 use anyhow::Result;
-use rand::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 struct Record {
     name: String,
     value: i32,
@@ -18,6 +17,22 @@ impl Data {
     pub fn new(values: HashMap<String, i32>) -> Self {
         //Self { values, data }
         Self { values }
+    }
+
+    pub fn from_csv() -> Result<Data> {
+        let mut rdr = csv::Reader::from_path("./assets/data.csv")?;
+        let mut records: Vec<Record> = vec![];
+        let mut data_value: HashMap<String, i32> = HashMap::new();
+        for result in rdr.deserialize() {
+            // Notice that we need to provide a type hint for automatic
+            // deserialization.
+            let record: Record = result?;
+            records.push(record.clone());
+            data_value.insert(record.name, record.value);
+        }
+
+        let d = Data::new(data_value);
+        Ok(d)
     }
 
     pub fn kv(&self, a: &str) -> (String, i32) {
@@ -46,16 +61,62 @@ impl Data {
     }
 }
 
-fn example() -> Result<()> {
+pub fn example(parent1: &str, parent2: &str) -> Result<()> {
     println!("example!");
     let mut rdr = csv::Reader::from_path("./assets/data.csv")?;
+    let mut records: Vec<Record> = vec![];
+    let mut data_value: HashMap<String, i32> = HashMap::new();
     for result in rdr.deserialize() {
         // Notice that we need to provide a type hint for automatic
         // deserialization.
         let record: Record = result?;
         println!("{:?}", record);
+        records.push(record.clone());
+        data_value.insert(record.name, record.value);
     }
+
+    let mut s: HashSet<String> = HashSet::new();
+    s.insert(parent1.to_string());
+    s.insert(parent2.to_string());
+
+    let d = Data::new(data_value);
+    for g in 0..10 {
+        println!("Generation {g}: {:?}", s);
+        let s_before = s.clone();
+        let sub_s: Vec<String> = s.clone().into_iter().collect();
+        for i in 0..sub_s.len() {
+            for j in i + 1..sub_s.len() {
+                let a = &sub_s[i];
+                let b = &sub_s[j];
+                let (k, _) = d.combine(a, b);
+                s.insert(k);
+            }
+        }
+        if s_before == s {
+            println!("Generation {g} is end.");
+            break;
+        }
+    }
+
     Ok(())
+}
+
+pub fn example2() -> Result<Data> {
+    println!("example!");
+    let mut rdr = csv::Reader::from_path("./assets/data.csv")?;
+    let mut records: Vec<Record> = vec![];
+    let mut data_value: HashMap<String, i32> = HashMap::new();
+    for result in rdr.deserialize() {
+        // Notice that we need to provide a type hint for automatic
+        // deserialization.
+        let record: Record = result?;
+        println!("{:?}", record);
+        records.push(record.clone());
+        data_value.insert(record.name, record.value);
+    }
+
+    let d = Data::new(data_value);
+    Ok(d)
 }
 
 #[cfg(test)]
@@ -133,6 +194,14 @@ mod tests {
 
     #[test]
     fn cs00() {
-        example();
+        //example("シルキーヌ", "ヘルカルダ");
+        let d = example2().unwrap();
+        let parent = "ヘルカルダ";
+        let mut parent2 = "ホウロック".to_string();
+        for i in 0..10 {
+            let (child, v) = d.combine(parent, &parent2);
+            println!("{parent} x {parent2} = {child}");
+            parent2 = child;
+        }
     }
 }

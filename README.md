@@ -1,11 +1,3 @@
-# Generate command
-
-```sh
-cargo run -- --generate zsh > palpath
-chmod 755 palpath
-```
-
-
 # algorithm
 
 initial: a, b
