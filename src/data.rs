@@ -1,5 +1,12 @@
+use anyhow::Result;
 use rand::prelude::*;
 use std::collections::HashMap;
+
+#[derive(Debug, serde::Deserialize)]
+struct Record {
+    name: String,
+    value: i32,
+}
 
 #[derive(Debug, Clone)]
 pub struct Data {
@@ -37,6 +44,18 @@ impl Data {
         }
         (closest_key.unwrap().to_string(), closest_value.unwrap())
     }
+}
+
+fn example() -> Result<()> {
+    println!("example!");
+    let mut rdr = csv::Reader::from_path("./assets/data.csv")?;
+    for result in rdr.deserialize() {
+        // Notice that we need to provide a type hint for automatic
+        // deserialization.
+        let record: Record = result?;
+        println!("{:?}", record);
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -84,6 +103,7 @@ mod tests {
         println!("{:?}", d);
 
         let mut s: HashSet<String> = HashSet::new();
+        let mut s_new: HashSet<String> = HashSet::new();
         s.insert("a".to_string());
         s.insert("b".to_string());
 
@@ -95,7 +115,7 @@ mod tests {
                     let a = &sub_s[i];
                     let b = &sub_s[j];
                     let (k, _) = d.combine(a, b);
-                    s.insert(k);
+                    s_new.insert(k);
                 }
             }
             println!("Generation {g}: {:?}", s);
@@ -109,5 +129,10 @@ mod tests {
         //data.insert(("a", "b"), "c");
         //data.insert(("a", "c"), "d");
         //data.insert(("a", "e"), "d");
+    }
+
+    #[test]
+    fn cs00() {
+        example();
     }
 }
