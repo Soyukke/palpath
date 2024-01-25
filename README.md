@@ -1,20 +1,29 @@
-# algorithm
+# パルワールド交配シミュレーター
 
-initial: a, b
-target: t
+## パルの交配、pは固定
 
-combine a & b, and generate t.
+```
+cargo run -- dig -p ライバード -q ホウロック
+```
 
-Generation 1.
-S = {a, b}
-a, b -> c
+example
+```
+Step 0  ライバード      x       ホウロック      =       ビリビリュー
+Step 1  ライバード      x       ビリビリュー    =       ニャンギマリ
+Step 2  ライバード      x       ニャンギマリ    =       サラブレイズ
+Step 3  ライバード      x       サラブレイズ    =       ブリザモス
+Step 4  ライバード      x       ブリザモス      =       デスティング
+Step 5  ライバード      x       デスティング    =       サラブラック
+Step 6  ライバード      x       サラブラック    =       フロスカノン
+Step 7  ライバード      x       フロスカノン    =       ライバード
+```
 
 
-Generation 2.
-S = {a, b, c}
+## 全種類のパルを生成するパルのSet
 
-a, c -> d
-b, c -> e
+```
+cargo run --release -- info compact
+```
 
-Generation 3.
-S = {a, b, c, d, e}
+
+

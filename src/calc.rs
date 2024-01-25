@@ -40,3 +40,5 @@ pub fn b00(a: &str, b: &str) {
         }
     }
 }
+
+pub fn find_compact() {}
