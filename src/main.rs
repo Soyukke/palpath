@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use palpath::data::Data;
+use palpath::{calc::find_target_path, data::Data};
 
 #[derive(Debug, Parser)]
 #[command(
@@ -32,6 +32,19 @@ enum SubCommands {
         /// parent 2
         #[arg(short, long, default_value_t = 10)]
         n_iter: usize,
+    },
+    /// パルのセットからターゲットのパルへ繋がるパスを見つける。見つからない場合は見つからないと表示する。
+    Tree {
+        /// male pal parents set
+        #[arg(short = 'm', long, value_delimiter = ',')]
+        males: Vec<String>,
+        /// femal pal parents set
+        #[arg(short = 'f', long, value_delimiter = ',')]
+        females: Vec<String>,
+
+        /// target pal
+        #[arg(short = 't', long)]
+        target: String,
     },
 }
 
@@ -68,6 +81,17 @@ fn main() -> Result<()> {
                 data.find_compact()?;
             }
         },
+        SubCommands::Tree {
+            males,
+            females,
+            target,
+        } => {
+            find_target_path(
+                males.iter().map(|s| s.as_str()).collect(),
+                females.iter().map(|s| s.as_str()).collect(),
+                &target,
+            )?;
+        }
     }
 
     Ok(())

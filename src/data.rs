@@ -10,16 +10,23 @@ struct Record {
     value: i32,
 }
 
+#[derive(Debug, serde::Deserialize, Clone)]
+struct Special {
+    parent1: String,
+    parent2: String,
+    child: String,
+}
+
 #[derive(Debug, Clone)]
 pub struct Data {
     values: HashMap<String, i32>,
-    //data: HashMap<(&'a str, &'a str), &'a str>,
+    specials: HashMap<(String, String), String>,
 }
 
 impl Data {
-    pub fn new(values: HashMap<String, i32>) -> Self {
+    pub fn new(values: HashMap<String, i32>, specials: HashMap<(String, String), String>) -> Self {
         //Self { values, data }
-        Self { values }
+        Self { values, specials }
     }
 
     pub fn from_csv() -> Result<Data> {
@@ -34,7 +41,16 @@ impl Data {
             data_value.insert(record.name, record.value);
         }
 
-        let d = Data::new(data_value);
+        let mut rdr = csv::Reader::from_path("./assets/special.csv")?;
+        let mut records: Vec<Special> = vec![];
+        let mut specials: HashMap<(String, String), String> = HashMap::new();
+        for result in rdr.deserialize() {
+            let record: Special = result?;
+            records.push(record.clone());
+            specials.insert((record.parent1, record.parent2), record.child);
+        }
+
+        let d = Data::new(data_value, specials);
         Ok(d)
     }
 
@@ -52,6 +68,18 @@ impl Data {
             .values
             .get(b)
             .context(format!("パルが見つからない!: {b}"))?;
+
+        if self.specials.get(&(a.to_string(), b.to_string())).is_some() {
+            let child = self.specials.get(&(a.to_string(), b.to_string())).unwrap();
+            let value = self.values.get(child).unwrap();
+            return Ok((child.to_string(), *value));
+        }
+        if self.specials.get(&(b.to_string(), a.to_string())).is_some() {
+            let child = self.specials.get(&(b.to_string(), a.to_string())).unwrap();
+            let value = self.values.get(child).unwrap();
+            return Ok((child.to_string(), *value));
+        }
+
         // 1桁目は切り捨てする
         let v_c = ((v_a + v_b) as f64) / 2.0;
         let v_c = (v_c / 10.0).floor() * 10.0;
@@ -148,84 +176,5 @@ impl Data {
         }
         println!("s_compact: {:?}", s_compact);
         Ok(())
-    }
-}
-
-pub fn example(parent1: &str, parent2: &str) -> Result<()> {
-    println!("example!");
-    let mut rdr = csv::Reader::from_path("./assets/data.csv")?;
-    let mut records: Vec<Record> = vec![];
-    let mut data_value: HashMap<String, i32> = HashMap::new();
-    for result in rdr.deserialize() {
-        // Notice that we need to provide a type hint for automatic
-        // deserialization.
-        let record: Record = result?;
-        println!("{:?}", record);
-        records.push(record.clone());
-        data_value.insert(record.name, record.value);
-    }
-
-    let mut s: HashSet<String> = HashSet::new();
-    s.insert(parent1.to_string());
-    s.insert(parent2.to_string());
-
-    let d = Data::new(data_value);
-    for g in 0..10 {
-        println!("Generation {g}: {:?}", s);
-        let s_before = s.clone();
-        let sub_s: Vec<String> = s.clone().into_iter().collect();
-        for i in 0..sub_s.len() {
-            for j in i + 1..sub_s.len() {
-                let a = &sub_s[i];
-                let b = &sub_s[j];
-                let (k, _) = d.combine(a, b)?;
-                s.insert(k);
-            }
-        }
-        if s_before == s {
-            println!("Generation {g} is end.");
-            break;
-        }
-    }
-
-    Ok(())
-}
-
-pub fn example2() -> Result<Data> {
-    println!("example!");
-    let mut rdr = csv::Reader::from_path("./assets/data.csv")?;
-    let mut records: Vec<Record> = vec![];
-    let mut data_value: HashMap<String, i32> = HashMap::new();
-    for result in rdr.deserialize() {
-        // Notice that we need to provide a type hint for automatic
-        // deserialization.
-        let record: Record = result?;
-        println!("{:?}", record);
-        records.push(record.clone());
-        data_value.insert(record.name, record.value);
-    }
-
-    let d = Data::new(data_value);
-    Ok(d)
-}
-
-#[cfg(test)]
-mod tests {
-    use std::collections::HashSet;
-
-    use super::*;
-
-    //cargo test b00 -- --nocapture
-    #[test]
-    fn cs00() {
-        //example("シルキーヌ", "ヘルカルダ");
-        let d = example2().unwrap();
-        let parent = "ヘルカルダ";
-        let mut parent2 = "ホウロック".to_string();
-        for i in 0..10 {
-            let (child, v) = d.combine(parent, &parent2);
-            println!("{parent} x {parent2} = {child}");
-            parent2 = child;
-        }
     }
 }
