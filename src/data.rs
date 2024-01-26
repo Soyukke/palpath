@@ -6,6 +6,7 @@ use std::{
 
 #[derive(Debug, serde::Deserialize, Clone)]
 struct Record {
+    id: i32,
     name: String,
     value: i32,
 }
@@ -20,25 +21,36 @@ struct Special {
 #[derive(Debug, Clone)]
 pub struct Data {
     values: HashMap<String, i32>,
+    ids: HashMap<String, i32>,
     specials: HashMap<(String, String), String>,
 }
 
 impl Data {
-    pub fn new(values: HashMap<String, i32>, specials: HashMap<(String, String), String>) -> Self {
+    pub fn new(
+        values: HashMap<String, i32>,
+        ids: HashMap<String, i32>,
+        specials: HashMap<(String, String), String>,
+    ) -> Self {
         //Self { values, data }
-        Self { values, specials }
+        Self {
+            values,
+            ids,
+            specials,
+        }
     }
 
     pub fn from_csv() -> Result<Data> {
         let mut rdr = csv::Reader::from_path("./assets/data.csv")?;
         let mut records: Vec<Record> = vec![];
         let mut data_value: HashMap<String, i32> = HashMap::new();
+        let mut ids: HashMap<String, i32> = HashMap::new();
         for result in rdr.deserialize() {
             // Notice that we need to provide a type hint for automatic
             // deserialization.
             let record: Record = result?;
             records.push(record.clone());
-            data_value.insert(record.name, record.value);
+            data_value.insert(record.name.clone(), record.value);
+            ids.insert(record.name, record.id);
         }
 
         let mut rdr = csv::Reader::from_path("./assets/special.csv")?;
@@ -50,7 +62,7 @@ impl Data {
             specials.insert((record.parent1, record.parent2), record.child);
         }
 
-        let d = Data::new(data_value, specials);
+        let d = Data::new(data_value, ids, specials);
         Ok(d)
     }
 
@@ -82,16 +94,29 @@ impl Data {
 
         // 1桁目は切り捨てする
         let v_c = ((v_a + v_b) as f64) / 2.0;
-        let v_c = (v_c / 10.0).floor() * 10.0;
 
+        // distanceが近くてidが小さい方を優先する
         let mut closest_distance = f64::INFINITY;
         let mut closest_key: Option<&str> = None;
         let mut closest_value: Option<i32> = None;
+        let mut closest_id: i32 = i32::MAX;
+
+        let reigai: Vec<String> = self.specials.values().cloned().collect();
+
         for key in self.values.keys() {
+            if reigai.contains(key) {
+                continue;
+            }
             let x = self.values.get(key).unwrap();
+            let id = self.ids.get(key).unwrap();
             let distance = (*x as f64 - v_c).abs();
             if distance < closest_distance {
+                closest_id = *id;
                 closest_distance = distance;
+                closest_key = Some(key);
+                closest_value = Some(*x);
+            } else if distance == closest_distance && *id < closest_id {
+                closest_id = *id;
                 closest_key = Some(key);
                 closest_value = Some(*x);
             }

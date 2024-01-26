@@ -22,6 +22,14 @@ enum SubCommands {
         #[command(subcommand)]
         infocommands: InfoCommands,
     },
+    Combine {
+        /// parent 1, fix parent.
+        #[arg(short = 'p', long)]
+        parent1: String,
+        /// parent 2
+        #[arg(short = 'q', long)]
+        parent2: String,
+    },
     Dig {
         /// parent 1, fix parent.
         #[arg(short = 'p', long)]
@@ -74,6 +82,13 @@ fn main() -> Result<()> {
                 println!("step {}\t{}\tx\t{}\t=\t{}", i, parent, parent2, child);
                 parent2 = child;
             }
+        }
+        SubCommands::Combine { parent1, parent2 } => {
+            let data = Data::from_csv()?;
+            let parent = parent1;
+            let parent2 = parent2;
+            let (child, _v) = data.combine(&parent, &parent2)?;
+            println!("{}\tx\t{}\t=\t{}", parent, parent2, child);
         }
         SubCommands::Info { infocommands } => match infocommands {
             InfoCommands::Compact => {
