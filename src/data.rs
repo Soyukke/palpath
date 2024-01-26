@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
@@ -43,10 +43,18 @@ impl Data {
         (a.to_string(), *v_a)
     }
 
-    pub fn combine(&self, a: &str, b: &str) -> (String, i32) {
-        let v_a = self.values.get(a).unwrap();
-        let v_b = self.values.get(b).unwrap();
+    pub fn combine(&self, a: &str, b: &str) -> Result<(String, i32)> {
+        let v_a = self
+            .values
+            .get(a)
+            .context(format!("パルが見つからない!: {a}"))?;
+        let v_b = self
+            .values
+            .get(b)
+            .context(format!("パルが見つからない!: {b}"))?;
+        // 1桁目は切り捨てする
         let v_c = ((v_a + v_b) as f64) / 2.0;
+        let v_c = (v_c / 10.0).floor() * 10.0;
 
         let mut closest_distance = f64::INFINITY;
         let mut closest_key: Option<&str> = None;
@@ -60,10 +68,10 @@ impl Data {
                 closest_value = Some(*x);
             }
         }
-        (closest_key.unwrap().to_string(), closest_value.unwrap())
+        Ok((closest_key.unwrap().to_string(), closest_value.unwrap()))
     }
 
-    pub fn find_compact(&self) {
+    pub fn find_compact(&self) -> Result<()> {
         // a, bから生成されるセットをすべて計算する
         // セットが最大数のa, bを決定し、Sから生成されるセットをすべて取り除く
         let mut generated_set: HashMap<(String, String), HashSet<String>> = HashMap::new();
@@ -77,14 +85,14 @@ impl Data {
                 s.insert(p.clone().to_string());
                 s.insert(q.clone().to_string());
                 let mut s2: HashSet<String> = HashSet::new();
-                let (k, _) = self.combine(p, q);
+                let (k, _) = self.combine(p, q)?;
                 s2.insert(k.to_string());
 
                 loop {
                     let mut s_new: HashSet<String> = HashSet::new();
                     for p in s.iter() {
                         for q in s2.iter() {
-                            let (k, _) = self.combine(p, q);
+                            let (k, _) = self.combine(p, q)?;
                             s_new.insert(k);
                         }
                     }
@@ -139,6 +147,7 @@ impl Data {
             });
         }
         println!("s_compact: {:?}", s_compact);
+        Ok(())
     }
 }
 
@@ -169,7 +178,7 @@ pub fn example(parent1: &str, parent2: &str) -> Result<()> {
             for j in i + 1..sub_s.len() {
                 let a = &sub_s[i];
                 let b = &sub_s[j];
-                let (k, _) = d.combine(a, b);
+                let (k, _) = d.combine(a, b)?;
                 s.insert(k);
             }
         }

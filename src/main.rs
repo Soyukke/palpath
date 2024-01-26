@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use palpath::{calc::find_compact, data::Data};
+use palpath::data::Data;
 
 #[derive(Debug, Parser)]
 #[command(
@@ -51,16 +51,21 @@ fn main() -> Result<()> {
             let data = Data::from_csv()?;
             let parent = parent1;
             let mut parent2 = parent2;
+            println!("start");
             for i in 0..n_iter {
-                let (child, _v) = data.combine(&parent, &parent2);
-                println!("Step {}\t{}\tx\t{}\t=\t{}", i, parent, parent2, child);
+                let (child, _v) = data.combine(&parent, &parent2)?;
+                if parent2 == child {
+                    println!("end");
+                    break;
+                }
+                println!("step {}\t{}\tx\t{}\t=\t{}", i, parent, parent2, child);
                 parent2 = child;
             }
         }
         SubCommands::Info { infocommands } => match infocommands {
             InfoCommands::Compact => {
                 let data = Data::from_csv()?;
-                data.find_compact();
+                data.find_compact()?;
             }
         },
     }

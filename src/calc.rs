@@ -1,9 +1,10 @@
+use anyhow::Result;
 use rand::prelude::*;
 use std::collections::{HashMap, HashSet};
 
 use crate::data::Data;
 
-pub fn b00(a: &str, b: &str) {
+pub fn b00(a: &str, b: &str) -> Result<()> {
     let names: Vec<String> = (b'a'..=b'z').map(|c| (c as char).to_string()).collect();
     // TODO: ここは事前定義かなにか
     let mut data_value: HashMap<String, i32> = HashMap::new();
@@ -29,7 +30,7 @@ pub fn b00(a: &str, b: &str) {
             for j in i + 1..sub_s.len() {
                 let a = &sub_s[i];
                 let b = &sub_s[j];
-                let (k, _) = d.combine(a, b);
+                let (k, _) = d.combine(a, b)?;
                 s_new.insert(k);
             }
         }
@@ -39,6 +40,5 @@ pub fn b00(a: &str, b: &str) {
             break;
         }
     }
+    Ok(())
 }
-
-pub fn find_compact() {}
