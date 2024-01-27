@@ -98,6 +98,10 @@ impl Data {
             .values
             .get(b)
             .context(format!("パルが見つからない!: {b}"))?;
+        // NOTE: 親が同種の場合は子も同種
+        if a == b {
+            return Ok((a.to_string(), *v_a));
+        }
 
         if self.specials.get(&(a.to_string(), b.to_string())).is_some() {
             let child = self.specials.get(&(a.to_string(), b.to_string())).unwrap();
