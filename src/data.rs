@@ -4,6 +4,8 @@ use std::{
     hash::Hash,
 };
 
+use crate::calc::PalNode;
+
 #[derive(Debug, serde::Deserialize, Clone)]
 struct Record {
     id: i32,
@@ -232,6 +234,24 @@ impl Data {
             });
         }
         println!("s_compact: {:?}", s_compact);
+        Ok(())
+    }
+
+    pub fn pattern(&self, name: &str) -> Result<()> {
+        let keys: Vec<String> = self.values.keys().cloned().collect();
+        let mut patterns: Vec<(String, String)> = vec![];
+        let n_data = keys.len();
+        for i in 0..n_data {
+            for j in (i + 1)..n_data {
+                let p = &keys[i];
+                let q = &keys[j];
+                let (k, _) = self.combine(p, q)?;
+                if k == name {
+                    patterns.push((p.clone(), q.clone()));
+                    println!("{:<15}\t{}", p, q);
+                }
+            }
+        }
         Ok(())
     }
 }

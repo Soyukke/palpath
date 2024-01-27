@@ -41,6 +41,10 @@ enum SubCommands {
         #[arg(short, long, default_value_t = 10)]
         n_iter: usize,
     },
+    Pattern {
+        #[arg(short, long)]
+        name: String,
+    },
     /// パルのセットからターゲットのパルへ繋がるパスを見つける。見つからない場合は見つからないと表示する。
     Tree {
         /// male pal parents set
@@ -89,6 +93,10 @@ fn main() -> Result<()> {
             let parent2 = parent2;
             let (child, _v) = data.combine(&parent, &parent2)?;
             println!("{}\tx\t{}\t=\t{}", parent, parent2, child);
+        }
+        SubCommands::Pattern { name } => {
+            let data = Data::from_csv()?;
+            data.pattern(&name)?;
         }
         SubCommands::Info { infocommands } => match infocommands {
             InfoCommands::Compact => {
