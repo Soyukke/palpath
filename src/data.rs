@@ -18,11 +18,18 @@ struct Special {
     child: String,
 }
 
+#[derive(Debug, serde::Deserialize, Clone)]
+struct TieBreakOrder {
+    order: i32,
+    name: String,
+}
+
 #[derive(Debug, Clone)]
 pub struct Data {
     values: HashMap<String, i32>,
     ids: HashMap<String, i32>,
     specials: HashMap<(String, String), String>,
+    tiebreak: HashMap<String, i32>,
 }
 
 impl Data {
@@ -30,12 +37,14 @@ impl Data {
         values: HashMap<String, i32>,
         ids: HashMap<String, i32>,
         specials: HashMap<(String, String), String>,
+        tiebreak: HashMap<String, i32>,
     ) -> Self {
         //Self { values, data }
         Self {
             values,
             ids,
             specials,
+            tiebreak,
         }
     }
 
@@ -62,7 +71,16 @@ impl Data {
             specials.insert((record.parent1, record.parent2), record.child);
         }
 
-        let d = Data::new(data_value, ids, specials);
+        let mut rdr = csv::Reader::from_path("./assets/database_tiebreakorder.csv")?;
+        let mut records: Vec<TieBreakOrder> = vec![];
+        let mut tiebreak: HashMap<String, i32> = HashMap::new();
+        for result in rdr.deserialize() {
+            let record: TieBreakOrder = result?;
+            records.push(record.clone());
+            tiebreak.insert(record.name, record.order);
+        }
+
+        let d = Data::new(data_value, ids, specials, tiebreak);
         Ok(d)
     }
 
@@ -100,6 +118,7 @@ impl Data {
         let mut closest_key: Option<&str> = None;
         let mut closest_value: Option<i32> = None;
         let mut closest_id: i32 = i32::MAX;
+        let mut order: i32 = i32::MAX;
 
         let reigai: Vec<String> = self.specials.values().cloned().collect();
 
@@ -110,15 +129,24 @@ impl Data {
             let x = self.values.get(key).unwrap();
             let id = self.ids.get(key).unwrap();
             let distance = (*x as f64 - v_c).abs();
+
+            let order_new = *self.tiebreak.get(key).unwrap();
+
             if distance < closest_distance {
                 closest_id = *id;
                 closest_distance = distance;
                 closest_key = Some(key);
                 closest_value = Some(*x);
-            } else if distance == closest_distance && *id < closest_id {
+                order = order_new;
+            } else if distance == closest_distance && order_new < order {
+                //cargo run -- combine -p モコロン -q タマコッコ
+                //                    ニャオテテト
+                //                    間違い: チョロゾー
+                // tie breakで同一distanceのときは優先順位を考慮する
                 closest_id = *id;
                 closest_key = Some(key);
                 closest_value = Some(*x);
+                order = order_new;
             }
         }
         Ok((closest_key.unwrap().to_string(), closest_value.unwrap()))
